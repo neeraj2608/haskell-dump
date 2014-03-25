@@ -9,5 +9,5 @@ executable learn-haskell
   main-is:         Main.hs
   build-depends:   base >= 4
   ghc-options:     -Wall
-  other-modules:   Test
+  other-modules:   Haskell-Dump
 
