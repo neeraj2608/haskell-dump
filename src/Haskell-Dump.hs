@@ -1,5 +1,7 @@
 module HaskellDump where
 
+import Data.Maybe
+
 {-
 Messing about with Haskell.
 -}
@@ -104,6 +106,7 @@ data CustomerInfo = Customer CustomerId CustomerName
                     deriving (Show, Eq)      
 
 a = Customer 1 "a"
+aa = "a"
 b = Book 1 "a"
 -- a == b will return false even though they are structurally equivalent (composed of an Int and a String
 -- with the same corresponding values) coz they're different types
@@ -121,3 +124,169 @@ a' = Customer' (1,"a")
 b' = Book' (1,"a")
 -- a' == b' will still return False
 
+-- pattern matching works on user-defined types
+-- printName' is called an accessor
+-- must start lowercase!
+printName' (Customer' (a, _)) = a
+
+-- Combining accessors and type definitions
+data BookInfo'' = Book'' {
+                          bookId :: Int,
+                          bookName :: String
+                         }
+                         deriving (Show, Eq)
+
+-- using the accessor
+a'' = Book'' 1 "a"
+
+-- using the accessor
+-- we can change the order of data in this way of doing things
+a1' = Book'' {bookName="a", bookId=1}
+
+-----------------
+-- parameterized types
+-----------------
+data Maybe' b = Just' b | Nothing'
+               deriving (Show)
+
+aMaybe = Just' True
+aMaybe' = Nothing'
+
+-----------------
+-- recursive types
+-----------------
+data List a = Cons a (List a) -- List is defined in terms of itself
+              | Nil
+              deriving (Show, Eq)
+
+la = Nil -- :type lA gives List a
+lb = Cons 1 la -- :type lb gives List Integer
+lc = Cons 1 lb -- :type lc gives List Integer
+
+-- convert to List
+-- NOTE that Nil is a value constructor that we defined. It is NOT an inbuilt type.
+toList (x:xs) = Cons x (toList xs)
+toList [] = Nil
+
+-- convert from List
+fromList (Cons a b) = a : (fromList b)
+fromList Nil = []
+
+-- binary tree
+data Tree a = Node a (Tree a) (Tree a)
+            | Empty
+            deriving (Show)
+
+aTree = Node 1 (Node 2 Empty Empty) (Node 3 Empty Empty)
+bTree = Empty
+
+-- binary tree constructor using Maybe
+data Tree' a = Node' a (Maybe (Tree' a)) (Maybe (Tree' a))
+
+aTree' = Node' 1 (Nothing) (Nothing)
+bTree' = Node' 1 (Just (Node' 2 Nothing Nothing)) Nothing
+
+----------------
+-- useful errors
+----------------
+takeSecond (x:xs) | (null xs) = error "too short a list"
+                  | otherwise = (head xs) 
+
+x1 = takeSecond [1,2,3] -- good
+x2 = takeSecond [1] -- throws exception
+
+-- printSecond uses takeSecond but if takeSecond throws an
+-- exception, printSecond can't do anything with it (bcoz
+-- the exception exits IMMEDIATELY
+printSecond x = takeSecond x
+
+z1 = printSecond [1,2,3] -- all good, z1 = 2
+z2 = printSecond [1] -- exception, z2 can't be assigned a value
+
+safeSecond (_:x:_) = Just x
+safeSecond _ = Nothing
+
+safePrintSecond x = if(safeSecond x == Nothing) then -1
+                    else fromJust (safeSecond x)
+
+z3 = safePrintSecond [1,2,3] -- z3 will be 2
+z4 = safePrintSecond [1] -- z4 will be equal to -1 and will actually have a value (unlike when an exception was being thrown by takeSecond)
+
+{----------------------
+LOCAL VARIABLES
+-----------------------}
+-----------------------
+-- let
+-----------------------
+
+lend amount = let currentBalance = 100
+                  balance = currentBalance - amount
+                  in if(amount > currentBalance)
+                     then Nothing
+                     else Just balance -- not calculated unless the else is entered
+                     
+-- lets can be nested
+fx = let a = 1
+     in let b = 3
+        in a+b
+        
+-- nesting can cause shadowing
+fz = let a = 1
+     in let b = 3
+            a = 5 -- this a takes effect
+        in a+b
+        
+-- wheres are like lets
+fy = a + b
+     where a = 1
+           b = 3
+           
+-- lets can define functions. syntax same as variables.
+fa a = let b = 1
+       in let blah a = a + b -- blah is a function
+          in blah a
+          
+-- num elements in list
+numElems :: [a] -> Int
+numElems [] = 0
+numElems (x:xs) = 1 + numElems(xs)
+
+-- mean of list
+-- we traverse the list twice (once in numElems and once in sumList)
+meanList [] = 0
+meanList x = sumList x / (fromIntegral (numElems x))
+             where sumList [] = 0
+                   sumList (x:xs) = x + sumList(xs)
+
+-- mean of list
+calcMean x = meanList' x 0 0                   
+meanList' [] sum numElems | numElems /= 0 = sum / (fromIntegral numElems)
+                          | otherwise = 0
+meanList' (x:xs) sum numElems = meanList' xs (sum+x) (numElems+1)
+
+-- palindrome of list
+palList [] = []
+palList (x:xs) = [x] ++ palList xs ++ [x]
+
+-- is list a palindrome?
+-- version 1
+isPalList [] = False
+isPalList [x] = True
+isPalList (x:xs) | (x == last xs) = True && if(null (init xs))
+                                            then True
+                                            else isPalList (init xs)
+                 | otherwise = False
+
+-- version 2
+isPalList' [] = False
+isPalList' [x] = True
+isPalList' [x,y] = x == y
+isPalList' (x:xs) = (x == last xs) && isPalList' (init xs)
+
+-- intersperse :: a -> [[a]] -> [a]
+-- e.g. intersperse ',' ["foo","bar"]
+-- gives "foo","bar"
+intersperse :: a -> [[a]] -> [a]
+intersperse _ [] = []
+intersperse _ ([x]) = x -- matching a single list
+intersperse y (x:z) = x ++ [y] ++ intersperse y z -- here, x matches a list and z matches a LIST of LISTS
