@@ -175,7 +175,7 @@ fromList Nil = []
 -- binary tree
 data Tree a = Node a (Tree a) (Tree a)
             | Empty
-            deriving (Show)
+            deriving (Show, Eq)
 
 aTree = Node 1 (Node 2 Empty Empty) (Node 3 Empty Empty)
 bTree = Empty
@@ -290,3 +290,10 @@ intersperse :: a -> [[a]] -> [a]
 intersperse _ [] = []
 intersperse _ ([x]) = x -- matching a single list
 intersperse y (x:z) = x ++ [y] ++ intersperse y z -- here, x matches a list and z matches a LIST of LISTS
+
+-- binary tree height
+-- using max
+binTreeHeight Empty = 0
+binTreeHeight (Node a lChild rChild) = 1 + max (binTreeHeight lChild)(binTreeHeight rChild)
+                                     
+testTree = Node 1 (Node 2 Empty Empty) (Node 3 Empty (Node 4 Empty Empty))
