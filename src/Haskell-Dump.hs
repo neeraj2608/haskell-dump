@@ -1,6 +1,7 @@
 module HaskellDump where
 
 import Data.Maybe
+import Data.List
 
 {-
 Messing about with Haskell.
@@ -289,7 +290,7 @@ isPalList' (x:xs) = (x == last xs) && isPalList' (init xs)
 intersperse :: a -> [[a]] -> [a]
 intersperse _ [] = []
 intersperse _ ([x]) = x -- matching a single list
-intersperse y (x:z) = x ++ [y] ++ intersperse y z -- here, x matches a list and z matches a LIST of LISTS
+intersperse y (x:z) = x ++ [y] ++ HaskellDump.intersperse y z -- here, x matches a list and z matches a LIST of LISTS
 
 -- binary tree height
 -- using max
@@ -297,3 +298,101 @@ binTreeHeight Empty = 0
 binTreeHeight (Node a lChild rChild) = 1 + max (binTreeHeight lChild)(binTreeHeight rChild)
                                      
 testTree = Node 1 (Node 2 Empty Empty) (Node 3 Empty (Node 4 Empty Empty))
+
+{--
+LIST MANIPULATION
+--}
+pre = "burra" `isPrefixOf` "burrarum" -- true
+inf = "rar" `isInfixOf` "burrarum" -- true
+suf = "rum" `isSuffixOf` "burrarum" -- true
+
+-- head, init, tail, last exception if []
+
+-- concat
+conc = concat [[1,2,3],[4,5]] -- gives [1,2,3,4,5]
+
+-- reverse
+rev = reverse [4,3,2,1]
+
+-- and and or
+true = and [True, True]
+false = and [True, True, False]
+true' = or [True, False]
+false' = or [False, False]
+
+-- and gives true iff no members are false
+true'' = and [] -- this is True!!
+
+-- or gives true iff at least one member is true
+false'' = or [] -- this is False
+
+-- all and any
+true''' = all even [2,4,6]
+false''' = any odd [2,4,6]
+
+blah = [1,2,3,4]
+y = take 2 blah -- 1,2
+x = drop 2 blah -- 3,4
+
+z = splitAt 2 blah -- 0 to 1 goes into first list; 2 to end goes into second list. z = ([1,2],[3,4]). splitAt = take + drop
+
+blah' = [1,3,5,4,2]
+z' = takeWhile odd blah' -- [1,3,5]
+z'' = dropWhile odd blah' -- [4,2]
+
+z''' = span odd blah' -- ([1,3,5],[4,2])
+z'''' = break even blah' -- ([1,3,5],[4,2])
+
+z_ = elem 1 blah' -- True
+z__ = filter odd blah' ++ [7] -- [1,3,5,7]
+
+z___ = zip blah blah' -- [(1,1),(2,3),(3,5),(4,4)]. stops at shorter length
+z_' = zipWith (+) blah blah' -- [2,5,8,8] zip + map
+
+z__' = words "abc    bcd b      eed" -- splits on whitespace
+z_'' = unwords ["abc","bcd","b","eed"] -- "abc bcd b eed" adds a single space between each
+
+z_''' = unlines ["abc","bcd","b","eed"] -- there's a \n at the end!
+
+-- Safe versions of head, tail, last and init
+safeHead :: [a] -> Maybe a
+safeHead [] = Nothing
+safeHead a = Just (head a)
+
+safeTail :: [a] -> Maybe [a]
+safeTail [] = Nothing
+safeTail a = Just (tail a)
+
+safeInit :: [a] -> Maybe [a]
+safeInit [] = Nothing
+safeInit a = Just (init a)
+
+safeLast :: [a] -> Maybe a
+safeLast [] = Nothing
+safeLast a = Just (last a)
+
+-- takes a predicate and a list of any type, and splits its input list
+-- on every element for which the predicate returns False.
+-- e.g. splitWith odd [2,4,6,1,8,10,5,12] gives [[2,4,6],8,10],[12]]
+
+-- version 1
+splitWith :: (a -> Bool) -> [a] -> [[a]]
+splitWith _ [] = []
+splitWith predicate list = let bs = case b of
+                                         (x:y) -> y
+                                         x     -> x
+                           in [a] ++ splitWith predicate bs
+                           where (a,b) = break predicate list
+                         
+-- version 2
+splitWith' :: (a -> Bool) -> [a] -> [[a]]
+splitWith' _ [] = []
+splitWith' predicate list = [x] ++ splitWith' predicate (drop (length x + ((length list) - (length y))) list)
+                            where x = takeWhile (not . predicate) y
+                                  y = dropWhile predicate list
+                            
+-- version 3
+splitWith'' :: (a -> Bool) -> [a] -> [[a]]
+splitWith'' _ [] = []
+splitWith'' predicate list = [x] ++ splitWith'' predicate (dropWhile predicate y)
+                             where (x,y) = span (not . predicate) (dropWhile predicate list)
