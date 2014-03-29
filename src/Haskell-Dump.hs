@@ -2,6 +2,8 @@ module HaskellDump where
 
 import Data.Maybe
 import Data.List
+import Data.Char
+import Data.Bits
 
 {-
 Messing about with Haskell.
@@ -396,3 +398,74 @@ splitWith'' :: (a -> Bool) -> [a] -> [[a]]
 splitWith'' _ [] = []
 splitWith'' predicate list = [x] ++ splitWith'' predicate (dropWhile predicate y)
                              where (x,y) = span (not . predicate) (dropWhile predicate list)
+                             
+-- convert string to digit
+sToDigit :: String -> Int
+sToDigit s = loop 0 s
+
+loop :: Int -> String -> Int
+loop acc [] = acc
+loop acc (x:xs) = let acc' = 10*acc + digitToInt x
+                  in loop acc' xs
+                  
+-- square every element in list
+sqElem :: [Int] -> [Int]
+sqElem [] = []
+sqElem (x:xs) = x^2 : sqElem xs
+
+sqElem' x = map square x
+            where square x = x * x
+
+-- my map
+myMap f (x:xs) = f x : myMap f xs
+myMap _ _ = []
+
+-- convert every letter to uppercase
+toUpperCase [] = []
+toUpperCase (x:xs) = toUpper x : toUpperCase xs
+
+-- select even elems
+evenElems [] = []
+evenElems (x:xs) | even x = x : evenElems xs
+                 | otherwise = evenElems xs
+
+evenElems'  x = filter even x
+
+{--
+FOLDS
+--}
+-- sum of list
+calcSum x = sumList 0 x
+            where sumList :: Int -> [Int] -> Int
+                  sumList sum [] = sum
+                  sumList sum (x:xs) = sumList (sum + x) xs 
+                  
+-- using foldl
+calcSum' x = foldl (+) 0 x
+
+{--
+PARTIAL FUNCTIONS
+--}
+-- using patial functions
+nicerSum :: [Integer] -> Integer
+nicerSum = foldl (+) 0
+
+-- Adler checksum
+calcChecksum x = adlerChecksum 1 0 x
+                 where adlerChecksum a b []     = (b `shiftL` 16) .|. a
+                       adlerChecksum a b (x:xs) = adlerChecksum a' b' xs
+                                                  where a' = (a + (ord x .&. 0xFF)) `mod` base
+                                                        b' = (b + a) `mod` base
+                                                        base = 65521
+
+-- using foldl
+calcChecksum' x = let (a,b) = foldl func (1,0) x
+                  in (b `shiftL` 16) .|. a
+                  where func (a,b) x = let a' = (a + (ord x .&. 0xFF)) `mod` base
+                                       in (a', (b + a') `mod` base)
+                        base = 65521  
+                        
+{--
+SECTIONS
+--}
+powerOfTwo x = map (2^) x
