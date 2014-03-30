@@ -4,6 +4,7 @@ import Data.Maybe
 import Data.List
 import Data.Char
 import Data.Bits
+import Data.Either
 
 {-
 Messing about with Haskell.
@@ -416,10 +417,6 @@ sqElem (x:xs) = x^2 : sqElem xs
 sqElem' x = map square x
             where square x = x * x
 
--- my map
-myMap f (x:xs) = f x : myMap f xs
-myMap _ _ = []
-
 -- convert every letter to uppercase
 toUpperCase [] = []
 toUpperCase (x:xs) = toUpper x : toUpperCase xs
@@ -434,23 +431,59 @@ evenElems'  x = filter even x
 {--
 FOLDS
 --}
--- sum of list
+-- foldl defn
+foldl'' :: (a -> b -> a) -> a -> [b] -> a
+foldl'' step zero (x:xs) = foldl'' step (step zero x) xs
+foldl'' _ zero [] = zero
+
+-- foldr defn
+foldr'' :: (b -> a -> a) -> a -> [b] -> a
+foldr'' step zero (x:xs) = step x (foldr step zero xs)
+foldr'' step zero [] = zero
+
+-- foldl using foldr
+foldLR :: (a -> b -> a) -> a -> [b] -> a
+foldLR step zero (x:xs) = foldr step' (foldLR step zero xs) [x]
+                          where step' x y = step y x
+foldLR step zero [] = zero 
+
+-- foldl using foldr - their version - very interesting
+myFoldl :: (a -> b -> a) -> a -> [b] -> a
+
+myFoldl f z xs = foldr step id xs z
+    where step x g a = g (f a x)
+    
+-- this is how it evaluates for xs = [1,2], z = 0 i.e.,
+-- foldr step id [1,2] 0
+-- (step 1 (foldr step id [2])) 0 -- coz function application is left-associative
+-- (step 1 (step 2 (foldr step id []))) 0
+-- (step 1 (step 2 id)) 0
+-- (step 1 (id (+2 ?))) 0 -- ? signifies a partial function waiting for an input to the ?
+-- (id (+2 ?)) (+1 ?) 0
+-- (+2 ?) (+1 ?) 0
+-- (+2 (+1 ?)) 0
+-- (+2 +1 ?) 0
+-- (0 + 2 + 1)
+-- = 3
+
+-- identity with foldr
+identity :: [a] -> [a]
+identity x = foldr (:) [] x
+
+-- append with foldr
+append :: [a] -> [a] -> [a]
+append listToAppend appendToThisList = foldr (:) listToAppend appendToThisList
+
+-- sum of list no fold
 calcSum x = sumList 0 x
             where sumList :: Int -> [Int] -> Int
                   sumList sum [] = sum
                   sumList sum (x:xs) = sumList (sum + x) xs 
                   
--- using foldl
+-- sum of list using foldl
 calcSum' x = foldl (+) 0 x
 
-{--
-PARTIAL FUNCTIONS
---}
--- using patial functions
-nicerSum :: [Integer] -> Integer
-nicerSum = foldl (+) 0
-
--- Adler checksum
+-- Adler checksum no fold
 calcChecksum x = adlerChecksum 1 0 x
                  where adlerChecksum a b []     = (b `shiftL` 16) .|. a
                        adlerChecksum a b (x:xs) = adlerChecksum a' b' xs
@@ -458,14 +491,204 @@ calcChecksum x = adlerChecksum 1 0 x
                                                         b' = (b + a) `mod` base
                                                         base = 65521
 
--- using foldl
+-- Adler checksum using foldl
 calcChecksum' x = let (a,b) = foldl func (1,0) x
                   in (b `shiftL` 16) .|. a
                   where func (a,b) x = let a' = (a + (ord x .&. 0xFF)) `mod` base
                                        in (a', (b + a') `mod` base)
                         base = 65521  
-                        
+
+-- filter using no folds
+filter'' :: (a -> Bool) -> [a] -> [a]
+filter'' predicate (x:xs) | predicate x = x : filter'' predicate xs
+                          | otherwise = filter'' predicate xs
+filter'' _ [] = []
+
+-- filter with folds
+-- foldl
+filterLFold pr x = foldl pred [] x
+                   where pred y x | pr x = y ++ [x]
+                                  | otherwise = y
+-- foldr
+filterRFold pr  x = foldr pred [] x
+                    where pred xs acc | pr xs = xs : acc
+                                      | otherwise = acc
+
+-- map without folds
+map'' f (x:xs) = f x : map'' f xs
+map'' _ _ = []
+
+-- map with folds
+-- foldl
+mapLFold f x = foldl f' [] x
+               where f' acc x = acc ++ [f x]
+               
+-- foldr
+mapRFold f x = foldr f' [] x
+               where f' x acc = (f x) : acc
+
+-- convert string to int using folds
+asInt_fold :: String -> Int
+asInt_fold "" = 0
+asInt_fold "-" = 0
+asInt_fold s'@(s:ss) | s == '-' = (-1) * (foldl f 0 ss)
+                     | otherwise = foldl f 0 s' 
+                     where f acc x = let acc' = acc*10 + digitToInt x
+                                     in detect_int_overflow(acc',acc)
+                                     where detect_int_overflow (x,y) | x < 0 && y < 0 || x > 0 && y < 0 = error "Int Overflow"
+                                                                     | otherwise = x
+
+-- convert string to int using folds. safer version
+-- this is probably buggy!!
+type ErrorMessage = String
+
+saferDigitToInt :: Char -> Either ErrorMessage Int
+saferDigitToInt x | x `elem` ['0'..'9'] = Right (digitToInt x)
+                  | otherwise = Left "Not a digit." 
+
+asInt_either :: String -> Either ErrorMessage Int
+asInt_either "" = Right 0
+asInt_either "-" = Right 0
+asInt_either s' = foldl f (Right 0) s' 
+                  where f (Right acc) x = let acc' = acc*10 + digitToInt x
+                                          in detect_int_overflow(acc',acc)
+                                          where detect_int_overflow (x,y) | x < 0 && y < 0 || x > 0 && y < 0 = Left "Int Overflow"
+                                                                          | otherwise = Right x
+
+-- concat using foldr
+concatFR :: [[a]] -> [a]
+concatFR x = foldr f [] x
+             where f x acc = x ++ acc
+             
+-- takewhile without foldr
+takeWhile' _ [] = []
+takeWhile' p (x:xs) | p x = x : takeWhile' p xs
+                    | otherwise = []
+                  
+-- takewhile with foldr
+takeWhileFR p x = foldr f [] x
+                  where f x acc | p x = x : acc
+                                | otherwise = []
+
+-- groupBy with foldl
+-- since we use foldl, this does NOT work on infinite lists
+-- (e.g. test2 below) and hence is NOT a valid groupBy replacement
+groupBy' :: (a -> a -> Bool) -> [a] -> [[a]]
+groupBy' _ [] = []
+groupBy' p x = foldl f [[]] x
+               where f acc x | null (last acc) = [[x]]
+                             | p (head (last acc)) x = (init acc) ++ [(last acc) ++ [x]]
+                             | otherwise = acc ++ [[x]]
+{--
+test1 f = (f (<) [1,2,3,2,0,0,3,3,1,0]) == (groupBy (<) [1,2,3,2,0,0,3,3,1,0])
+test2 f = (head . head . f (<) $ [1..]) == (head . head . groupBy (<) $ [1..])
+test3 f = (take 100 $ f (==) $ cycle [1,2,2,1]) == (take 100 $ groupBy (==) $ cycle [1,2,2,1])
+test4 f = (head . head $ f (==) $ repeat 1) == (head . head $ groupBy (==) $ repeat 1)
+test5 f = (f (==) $ (take 100000 $ cycle [1,2,2,1])) == (groupBy (==) $ (take 100000 $ cycle [1,2,2,1]))
+test6 f = (f (==) []) == (groupBy (==) [])
+test7 f = (f (==) [1]) == (groupBy (==) [1])
+testAll f = map (\t -> t f) [test1,test2,test3,test4,test5,test6,test7]
+--}
+
+-- any with fold
+-- foldl
+anyFL :: (a -> Bool) -> [a] -> Bool
+anyFL p x = foldl f False x
+            where f acc x | p x = True
+                          | otherwise = acc
+                         
+-- foldr
+anyFR :: (a -> Bool) -> [a] -> Bool
+anyFR p x = foldr f False x
+            where f x acc | p x = True
+                          | otherwise = acc
+
+-- words with fold
+-- foldl
+wordsFL :: String -> [String]
+wordsFL s = foldl f [[]] s
+            where f :: [String] -> Char -> [String]
+                  f acc x | isSpace x = case (last acc) of 
+                                          [] -> acc
+                                          _  -> acc ++ [[]]
+                          | otherwise = (init acc) ++ [(last acc) ++ [x]]
+
+-- foldr
+wordsFR :: String -> [String]
+wordsFR s = foldr f [[]] s
+            where f x acc | isSpace x = case (head acc) of
+                                          [] -> acc
+                                          _  -> [[]] ++ acc
+                          | otherwise = [[x] ++ (head acc)] ++ (tail acc)
+
+
+-- unlines with fold
+-- foldl
+unlinesFL :: [String] -> String
+unlinesFL s = foldl f "" s
+              where f acc x = acc ++ x ++ "\n"
+              
+-- foldr
+unlinesFR :: [String] -> String
+unlinesFR s = foldr f "" s
+              where f x acc = x ++ "\n" ++ acc
+
+{--
+LAMBDAS
+--}
+isInAny needle haystack = any checkNeedle haystack
+                          where checkNeedle x = isInfixOf needle x  
+                          
+isInAny2 needle haystack = any (\s -> isInfixOf needle s) haystack
+
+{--
+PARTIAL FUNCTIONS
+--}
+-- using partial functions
+nicerSum :: [Integer] -> Integer
+nicerSum = foldl (+) 0 -- mind == blown!
+
+isInAny3 :: Eq a => [a] -> [[a]] -> Bool
+isInAny3 needle = any (isInfixOf needle)                          
+                          
 {--
 SECTIONS
 --}
 powerOfTwo x = map (2^) x
+
+isLowerCase = (`elem` ['a'..'z']) -- backticks are indispensable here because we're fixing the SECOND argument of elem
+
+{--
+AS PATTERN
+--}
+-- as patterns enable data sharing
+nonEmptyTails x'@(_:xs) = x' : nonEmptyTails xs -- if we'd used (_:xs) on the RHS, that data would have to be copied over from
+                                                -- wherever it was stored for the LHS
+nonEmptyTails [] = []
+
+{--
+COMPOSITION
+--}
+-- (.) is right associative!
+compose :: (b -> c) -> (a -> b) -> a -> c
+compose f g x = f (g x)
+
+nonEmptyTails' x = compose init tails x
+
+nonEmptyTails'' = compose init tails -- with currying
+
+nonEmptyTails''' = init . tails
+
+-- count num words in string that start with capital letter
+selectCapitalWords = filter isCap
+                     where isCap (x:xs) | x `elem` ['A'..'Z'] = True
+                           isCap _ = False
+countCapitalWords = length . selectCapitalWords . words
+
+countCapitalWords' = length . filter (isUpper . head) . words
+
+-- tail recursion - complete generality, longer to read and understand
+-- folds - between tail recursion and list manipulation in terms of generality. folds in themselves do very
+--         specific things but the step functions let us make them do whatever the context requires, thus
+--         making them a little more general
+-- list manipulation function - completely specific (one task per function), quicker to read and understand

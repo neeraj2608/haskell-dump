@@ -11,5 +11,6 @@ executable learn-haskell
   ghc-options:     -Wall
   other-modules:   
                    Haskell-Dump,
-                   GrahamScanAlgorithm
+                   GrahamScanAlgorithm,
+                   ExtractDefines
 
