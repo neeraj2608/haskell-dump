@@ -621,7 +621,6 @@ wordsFR s = foldr f [[]] s
                                           _  -> [[]] ++ acc
                           | otherwise = [[x] ++ (head acc)] ++ (tail acc)
 
-
 -- unlines with fold
 -- foldl
 unlinesFL :: [String] -> String
@@ -632,6 +631,12 @@ unlinesFL s = foldl f "" s
 unlinesFR :: [String] -> String
 unlinesFR s = foldr f "" s
               where f x acc = x ++ "\n" ++ acc
+
+-- cycle with fold
+-- foldr
+cycleFR :: [a] -> [a]
+cycleFR x = foldr f cycleFR x x
+            where f x y z = x:(y z)
 
 {--
 LAMBDAS
