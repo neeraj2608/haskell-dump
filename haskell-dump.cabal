@@ -6,11 +6,13 @@ author:         Raj
 
 executable learn-haskell
   hs-source-dirs:  src
-  main-is:         Main.hs
+  main-is:         json-library/Main.hs
   build-depends:   base >= 4
   ghc-options:     -Wall
   other-modules:   
                    Haskell-Dump,
                    GrahamScanAlgorithm,
-                   ExtractDefines
+                   ExtractDefines,
+                   json-library.SimpleJSON,
+                   SimplePrint
 
