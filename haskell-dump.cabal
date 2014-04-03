@@ -14,5 +14,7 @@ executable learn-haskell
                    GrahamScanAlgorithm,
                    ExtractDefines,
                    json-library.SimpleJSON,
-                   SimplePrint
+                   SimplePrint,
+                   PrettyPrint,
+                   Prettify
 

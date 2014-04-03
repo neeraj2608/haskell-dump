@@ -1,4 +1,4 @@
-module SimplePrint (simplePrint) where
+module SimplePrint (printJSON) where
     import SimpleJSON
     import Data.List (intercalate)
     
@@ -12,7 +12,10 @@ module SimplePrint (simplePrint) where
     
     -- compound types
     simplePrint (JSONArray x) = "[" ++ intercalate ", " (foldr f [] x) ++ "]"
-                                                where f x acc = [simplePrint x] ++ acc
+                                where f x acc = [simplePrint x] ++ acc
                                                 
     simplePrint (JSONObject x) = "{" ++ intercalate ", " (foldr f [] x) ++ "}"
                                  where f x acc = ["\"" ++ (fst x) ++ "\"" ++ ": " ++ (simplePrint (snd x))] ++ acc  
+                                 
+    printJSON :: JSONValue -> IO()
+    printJSON = putStrLn . simplePrint

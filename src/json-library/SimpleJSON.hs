@@ -1,12 +1,5 @@
 module SimpleJSON (
       JSONValue(..), -- .. indicates we also export the type constructors
-      getString,
-      getBool,
-      getDouble,
-      getInt,
-      isNull,
-      getArray,
-      getObject
     )where
     data JSONValue = JSONString String |
                      JSONBool Bool |
