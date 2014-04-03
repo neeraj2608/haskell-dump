@@ -1,5 +1,5 @@
 -- creates intermediate Doc representation from a JSONValue
-module Prettify (convertJSONValueToDoc, Doc) where
+module Prettify (convertJSONValueToDoc, Doc(..)) where
     import SimpleJSON
     import Data.List (intersperse)
     import Data.Maybe (fromJust)
@@ -75,9 +75,8 @@ module Prettify (convertJSONValueToDoc, Doc) where
     -- convert a list of Docs into one single Doc. Replace Line with a space on the right of the Union.
     concatDocArrayWithJoinLines :: [Doc] -> Doc
     concatDocArrayWithJoinLines x = foldr f Empty x
-                                    where f Line acc = Union (charToDoc ' ' <> acc) (Line <> acc) -- this line means the left hand of the Union can potentially be wider than the Right
-                                          f x acc = Union (x <> acc) (x <> acc)
-                                          
+                                    where f x acc = x <> (Union (charToDoc ' ') Line) <> acc -- this line means the left hand of the Union can potentially be wider than the Right
+                                     
     -- compact data for transferring over the wire
     compact :: Doc -> String
     compact Empty = ""
