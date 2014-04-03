@@ -26,7 +26,7 @@ module Prettify (convertJSONValueToDoc, Doc) where
     -- helper for charToDoc
     -- meta characters and their escaped equivalents
     escapedMetaChars :: [(Char, String)]
-    escapedMetaChars = zipWith f "\n\r\f\t\b\"\\/" "nrftb\"\\/"
+    escapedMetaChars = zipWith f "\n\r\f\t\b\\/" "nrftb\\/"
                        where f :: Char -> Char -> (Char, String)
                              f x y = (x,['\\',y])
                              
@@ -44,14 +44,14 @@ module Prettify (convertJSONValueToDoc, Doc) where
     convertJSONValueToDoc (JSONNull) = Text "NULL"
     
     convertJSONValueToDoc (JSONArray []) = Empty
-    convertJSONValueToDoc (JSONArray x) = series '[' ']' ", " convertJSONValueToDoc x
+    convertJSONValueToDoc (JSONArray x) = series '[' ']' ',' convertJSONValueToDoc x
     
-    convertJSONValueToDoc (JSONObject x) = series '{' '}' ", " f x
+    convertJSONValueToDoc (JSONObject x) = series '{' '}' ',' f x
                                            where f :: (String, JSONValue) -> Doc
-                                                 f x = stringToDoc (fst x) <> (convertJSONValueToDoc (JSONString ": ")) <> convertJSONValueToDoc (snd x)
+                                                 f x = stringToDoc (fst x) <> charToDoc ':' <> charToDoc ' ' <> convertJSONValueToDoc (snd x) -- the space appears after the colon
     
-    series :: Char -> Char -> String -> (a -> Doc) -> [a] -> Doc
-    series openChar closeChar separatorString mapFn = enclose openChar closeChar . concatDocArrayWithJoinLines . intersperse (stringToDoc separatorString) . map mapFn
+    series :: Char -> Char -> Char -> (a -> Doc) -> [a] -> Doc
+    series openChar closeChar separatorChar mapFn = enclose openChar closeChar . concatDocArrayWithJoinLines . intersperse (charToDoc separatorChar <> charToDoc ' ') . map mapFn -- add an extra space after the separator character
     
     ----------------------------    
     -- Doc utility functions
