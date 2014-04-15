@@ -697,3 +697,56 @@ countCapitalWords' = length . filter (isUpper . head) . words
 --         specific things but the step functions let us make them do whatever the context requires, thus
 --         making them a little more general
 -- list manipulation function - completely specific (one task per function), quicker to read and understand
+
+{--
+Typeclasses
+--}
+-- class definition
+class Basiceq a where
+  isEq :: a -> a -> Bool
+  
+-- instance definition
+instance Basiceq Bool where
+  isEq True True = True
+  isEq False False = True
+  isEq _ _ = False
+  
+-- default method definitions
+class Basiceq2 a where
+  isEq2, isNotEq2 :: a -> a -> Bool
+  
+  -- default definitions
+  isEq2 x y = not (isNotEq2 x y)
+  isNotEq2 x y = not (isEq2 x y)
+  
+instance Basiceq2 Bool where
+  -- must provide at least one implementation or you have infinite loop!!
+  isEq2 True True = True
+  isEq2 False False = True
+  isEq2 _ _ = False
+  
+data Color = Red | Green | Blue
+
+instance Basiceq2 Color where
+  isEq2 Red Red = True
+  isEq2 Green Green = True
+  isEq2 Blue Blue = True
+  isEq2 _ _ = False
+  
+-- important built-in typeclasses
+-- Show. Defines function show.
+-- putStr vs show
+-- ghci prints a value as it would be entered into a Haskell program. so adds extra quotes + escaping
+-- exapmle show 1 gives "1". putStr 1 gives 1.
+
+instance Show Color where
+  show Red = "R"
+  show Green = "G"
+  show Blue = "B"
+  
+-- Read. Defines function read which takes a string and converts it to the requisite data type
+burra = do
+          putStrLn "Enter a number"
+          inputStr <- getLine
+          let i = (read inputStr)::Double -- we have to specify which data type we expect or compiler will try to infer!
+          putStrLn ("You entered "++(show i))
