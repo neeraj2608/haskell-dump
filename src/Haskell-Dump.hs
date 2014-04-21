@@ -745,8 +745,31 @@ instance Show Color where
   show Blue = "B"
   
 -- Read. Defines function read which takes a string and converts it to the requisite data type
-burra = do
+enterNumber :: IO ()
+enterNumber = do
           putStrLn "Enter a number"
           inputStr <- getLine
           let i = (read inputStr)::Double -- we have to specify which data type we expect or compiler will try to infer!
           putStrLn ("You entered "++(show i))
+
+-- Actions
+str2message :: String -> String -- pure
+str2message x = "Data " ++ x
+
+str2action :: String -> IO ()
+str2action = putStrLn . str2message
+
+printNumbers1to10 :: IO ()
+printNumbers1to10 = do
+                 mapM_ (str2action . show) ([1..10]::[Int])
+
+-- (>>=)
+printName :: IO ()
+printName = putStrLn "Enter your name" >>
+            getLine >>= (\enteredString -> putStrLn $ "You entered " ++ enteredString)
+
+isGreen :: IO Bool
+isGreen = do
+            putStrLn "Is green your favorite color?"
+            inpStr <- getLine
+            return $ (toUpper $ head inpStr) == 'Y'

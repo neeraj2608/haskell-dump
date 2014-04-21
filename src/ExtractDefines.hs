@@ -2,12 +2,15 @@
 import System.Environment (getArgs)
 import Data.List (isPrefixOf)
 
+extractDefines :: String -> IO ()
 extractDefines = putStr . unlines . map (head . tail . words) . filter ("#define" `isPrefixOf`) . lines
 
 -- framework
 interactWith function inFile = do
   input <- readFile inFile
   function input
+
+main :: IO ()
 main = mainWith myFunction
        where mainWith function = do
                args <- getArgs
