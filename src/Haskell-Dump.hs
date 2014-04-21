@@ -5,6 +5,7 @@ import Data.List
 import Data.Char
 import Data.Bits
 import Data.Either
+import System.IO
 
 {-
 Messing about with Haskell.
@@ -773,3 +774,12 @@ isGreen = do
             putStrLn "Is green your favorite color?"
             inpStr <- getLine
             return $ (toUpper $ head inpStr) == 'Y'
+
+-- file read and writes
+printFileContentsInUpperCase :: String -> IO ()
+printFileContentsInUpperCase x = do
+                                   inputFileHandle <- openFile x ReadMode
+                                   inputFileContents <- hGetContents inputFileHandle
+                                   let result = map toUpper inputFileContents
+                                   putStrLn result
+                                   hClose inputFileHandle
