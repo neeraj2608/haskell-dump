@@ -783,3 +783,40 @@ printFileContentsInUpperCase x = do
                                    let result = map toUpper inputFileContents
                                    putStrLn result
                                    hClose inputFileHandle
+
+-- interact
+interactWith :: IO ()
+interactWith = interact (unlines . filter (elem 'a') . lines)
+
+-- actions
+intToAct :: Int -> IO ()
+intToAct = putStr . show
+
+testMapM_ :: IO ()
+testMapM_ = do
+         mapM_ intToAct [1..10]
+
+-- string to bool list
+str2BoolList :: String -> [Bool]
+str2BoolList [] = []
+str2BoolList (x:xs) | Data.Char.isLower x = False : str2BoolList xs
+                    | otherwise = True : str2BoolList xs
+
+str2BoolList' :: String -> [Bool]
+str2BoolList' x = map Data.Char.isUpper x
+
+retMaxInList :: (Num a, Ord a) => [a] -> a
+retMaxInList = foldr max 0 
+
+-- quicksort with pattern matching
+quickSort :: Ord a => [a] -> [a]
+quickSort [] = []
+quickSort (x:xs) = qHelper [] [] xs
+                   where qHelper as bs [] = (quickSort as) ++ [x] ++ (quickSort bs)
+                         qHelper as bs (y:ys) | y <= x = qHelper (as++[y]) bs ys
+                                              | otherwise = qHelper as (bs++[y]) ys
+
+-- quicksort with list comprehensions
+quickSort' :: Ord a => [a] -> [a]
+quickSort' (x:xs) = quickSort' [y | y<-xs, y <= x] ++ [x] ++ quickSort' [y | y<-xs, y > x] 
+quickSort' [] = []

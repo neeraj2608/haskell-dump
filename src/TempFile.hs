@@ -14,7 +14,13 @@ withTempFile processFile = do
                                                 ((\_ -> return ".")::IOException->IO FilePath) -- note how the exception type of the lambda needs to be specified
                              (tempFileName, tempFileHandle) <- openTempFile fileDir "tempFile.txt"
                              putStrLn $ "Using file " ++ show tempFileName
-                             finally (processFile tempFileHandle)
+                             finally (do
+                                        processFile tempFileHandle
+                                        putStrLn "Using writeFile"
+                                        writeFile tempFileName (show [1..10])
+                                        putStrLn "Using readFile"
+                                        contents <- readFile tempFileName
+                                        putStrLn contents)
                                      (do
                                         hClose tempFileHandle
                                         putStrLn $ "Deleting file " ++ tempFileName
