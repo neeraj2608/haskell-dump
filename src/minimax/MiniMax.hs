@@ -1,6 +1,7 @@
 {-
 - Minimax algorithm
-- based on http://page.mi.fu-berlin.de/oezbek/brueckenkurs/HaskellQuestions.pdf, page 124Q
+- Based on http://page.mi.fu-berlin.de/oezbek/brueckenkurs/HaskellQuestions.pdf, page 124Q
+- Author: Raj
 -}
 module MiniMax(
                Player(..),
@@ -10,6 +11,13 @@ module MiniMax(
 data Player = Player1 | Player2
 
 data Game position = Plays position [Game position]
+
+-- perfectGameFromPosition gives the final configuration of the game if
+-- played perfectly from position p onwards
+-- onemoveaway is a function that returns all next board configurations attainable from the
+-- current one
+perfectGameFromPosition :: Real num => (position -> [position]) -> (position -> num) -> (position -> Player) -> position -> position
+perfectGameFromPosition onemoveaway score chooseplayer p = play (chooseplayer p) score (gameTree onemoveaway p)
 
 -- generate game tree
 gameTree :: (position -> [position]) -> position -> Game position
@@ -32,8 +40,3 @@ maxPosition score x y | score x > score y = x
 minPosition :: Real num => (position -> num) -> position -> position -> position
 minPosition score x y | score x < score y = x
                       | otherwise = y
-
--- onemoveaway is a function that returns all positions reachable from the
--- current one
-perfectGameFromPosition :: Real num => (position -> [position]) -> (position -> num) -> (position -> Player) -> position -> position
-perfectGameFromPosition onemoveaway score chooseplayer p = play (chooseplayer p) score (gameTree onemoveaway p)
