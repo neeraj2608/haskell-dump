@@ -1,3 +1,6 @@
+{-
+- Based on http://page.mi.fu-berlin.de/oezbek/brueckenkurs/HaskellQuestions.pdf
+-}
 module Encr where
 
 import EncrUtilities
