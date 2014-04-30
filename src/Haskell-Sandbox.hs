@@ -6,6 +6,7 @@ import Data.Char
 import Data.Bits
 import Data.Either
 import System.IO
+import Data.ByteString.Lazy as L
 
 {-
 Messing about with Haskell.
@@ -806,7 +807,7 @@ str2BoolList' :: String -> [Bool]
 str2BoolList' x = map Data.Char.isUpper x
 
 retMaxInList :: (Num a, Ord a) => [a] -> a
-retMaxInList = foldr max 0 
+retMaxInList = foldr max 0
 
 -- quicksort with pattern matching
 quickSort :: Ord a => [a] -> [a]
@@ -818,5 +819,5 @@ quickSort (x:xs) = qHelper [] [] xs
 
 -- quicksort with list comprehensions
 quickSort' :: Ord a => [a] -> [a]
-quickSort' (x:xs) = quickSort' [y | y<-xs, y <= x] ++ [x] ++ quickSort' [y | y<-xs, y > x] 
+quickSort' (x:xs) = quickSort' [y | y<-xs, y <= x] ++ [x] ++ quickSort' [y | y<-xs, y > x]
 quickSort' [] = []
