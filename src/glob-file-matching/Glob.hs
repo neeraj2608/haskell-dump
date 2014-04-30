@@ -1,38 +1,33 @@
 module Glob where
+{-
+- Glob search for file names
+-}
 
-import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory, getDirectoryContents)
+import System.Directory (doesDirectoryExist, getCurrentDirectory, getDirectoryContents)
 import Control.Monad
-import System.FilePath ((</>), dropTrailingPathSeparator, splitFileName)
+import System.FilePath ((</>), splitFileName)
+import GlobRegex (fileNameMatches)
+
+findMatches :: FilePath -> IO ()
+findMatches patternToMatch = do
+                               matches <- matchingNames patternToMatch
+                               (putStr . unlines) matches
 
 matchingNames :: FilePath -> IO [FilePath]
-matchingNames patternToMatch | isPattern patternToMatch = let x = splitFileName patternToMatch
-                                                          in    
-                                                            case x of
-                                                              ("", b) -> do
-                                                                           currentDir <- getCurrentDirectory
-                                                                           listMatches currentDir b
-                                                              (a,b) -> if isPattern a
-                                                                         then matchingNames a
-                                                                         else undefined
-                             | otherwise = do
-                                             exists <- doesFileOrDirectoryExist patternToMatch
-                                             if exists
-                                               then return [patternToMatch]
-                                               else return []
-matchingNames [] = return []
+matchingNames patternToMatch = do
+                                 currentDir <- getCurrentDirectory
+                                 searchRecursive currentDir patternToMatch
 
-listMatches :: FilePath -> String -> IO [FilePath]
-listMatches dir pat = undefined
+searchRecursive :: FilePath -> String -> IO [FilePath]
+searchRecursive currentDir patternToMatch = do
+                                 fileAndDirList <- listFiles currentDir
+                                 dirs <- filterM doesDirectoryExist $ map (currentDir </>) fileAndDirList
+                                 childrenFiles <- mapM (`searchRecursive` patternToMatch) dirs
+                                 let currentDirFiles = filter (\x -> fileNameMatches (snd $ splitFileName x) patternToMatch True) fileAndDirList
+                                 return $ map (currentDir </>) currentDirFiles ++ concat childrenFiles
 
-listFiles :: IO [FilePath]
-listFiles = liftM (filter (not . flip elem [".",".."])) $ getDirectoryContents =<< getCurrentDirectory
-
-doesFileOrDirectoryExist :: FilePath -> IO Bool
-doesFileOrDirectoryExist patternToMatch = do
-                                           fileExists <- doesFileExist patternToMatch
-                                           if fileExists
-                                             then return fileExists
-                                             else doesDirectoryExist patternToMatch
+listFiles :: FilePath -> IO [FilePath]
+listFiles currentDir = liftM (filter (not . flip elem [".",".."])) $ getDirectoryContents currentDir
 
 isPattern :: String -> Bool
 isPattern = any (`elem` "?*[")
