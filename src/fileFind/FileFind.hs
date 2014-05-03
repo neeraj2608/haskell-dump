@@ -4,28 +4,14 @@
 module FileFind where
  
 import System.Directory (getDirectoryContents, doesDirectoryExist,
-                           getPermissions, Permissions, getModificationTime)
+                         getPermissions, getModificationTime)
 import System.FilePath ((</>), takeExtension)
 import Control.Monad
-import Data.Time (UTCTime(..))
 import System.IO
 import Control.Exception (SomeException(..), handle, bracket)
 
-type InfoP a = FilePath -> Permissions -> Maybe Integer -> UTCTime -> a
-
-type Predicate = InfoP Bool
-
-pathPredicate :: InfoP FilePath
-pathPredicate path _ _ _ = path
-
-sizePredicate :: InfoP Integer
-sizePredicate _ _ (Just size) _ = size
-sizePredicate _ _ Nothing _ = -1
-
-makePredicate :: Eq a => InfoP a -> a -> Predicate
--- w x y z are the args of f. e.g. f could be pathP
---makePredicate f k = \w x y z -> f w x y z == k
-makePredicate f k w x y z = f w x y z == k
+import Predicates
+import PredicateCombinators
 
 -- strict find
 listFiles :: FilePath -> IO [FilePath]
@@ -56,8 +42,8 @@ findWithSimplePred p x = do
        checkPred :: FilePath -> IO Bool
        checkPred = return . p
 
-findWithBetterPred :: Predicate -> FilePath -> IO [FilePath]
-findWithBetterPred p x = do
+findWithPred :: Predicate -> FilePath -> IO [FilePath]
+findWithPred p x = do
     result <- listFiles x 
     filterM checkPred result
     where
@@ -74,15 +60,20 @@ getFileSize x = handle (\(SomeException _) -> return Nothing) $
     -- catch exceptions from hFileSize on named pipes
     -- and close those file handles
     bracket (openFile x ReadMode)
-            -- release function. Will be exec'ed even if use function
+            -- release. Will be exec'ed even if use function
             -- exceptions out
             hClose
-            -- use function
+            -- use.
             $ (\fHandle ->
             do
                 size <- hFileSize fHandle
                 return (Just size))
 
 main :: IO [FilePath]
+main = findWithPred ((liftPath takeExtension ==? ".hs")
+                           &&?
+                           (sizePredicate <? 3000)) "."
+
+--main = findWithPred (makePredicate sizePredicate (==) 3114) "."
+--main = findWithPred (equalPredicate sizePredicate 3046) "."
 --main = findWithSimplePred (\x -> takeExtension x == ".hs") "."
-main = findWithBetterPred (makePredicate sizePredicate 2914) "."
