@@ -6,7 +6,6 @@ import Data.Char
 import Data.Bits
 import Data.Either
 import System.IO
-import Data.ByteString.Lazy as L
 
 {-
 Messing about with Haskell.
