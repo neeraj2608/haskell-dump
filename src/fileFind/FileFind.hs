@@ -4,7 +4,7 @@
 module FileFind where
  
 import System.Directory (getDirectoryContents, doesDirectoryExist,
-                         getPermissions, getModificationTime)
+                         getPermissions, getModificationTime, searchable)
 import System.FilePath ((</>), takeExtension)
 import Control.Monad
 import System.IO
@@ -12,6 +12,44 @@ import Control.Exception (SomeException(..), handle, bracket)
 
 import Predicates
 import PredicateCombinators
+
+-- traverse with folds and customizable iterators
+data Iterate x = Done {unwrap :: x} |
+                 Skip {unwrap :: x} |
+                 Continue {unwrap :: x}
+
+type Iterator x = x -> Info -> Iterate x
+
+foldTraverse :: Iterator a -> a -> FilePath -> IO a
+foldTraverse iter x currentDir = do
+    filesDirs <- liftM removeCurrentAndParentDir $ getDirectoryContents currentDir
+    infos <- mapM (getInfo . (currentDir </>)) filesDirs
+    foldWalk iter x infos
+    where
+        foldWalk it z (y:ys) = case it z y of
+            Done m -> return m
+            Skip _ -> foldWalk it z ys
+            Continue m -> do
+                if isDirectory y
+                    then foldTraverse it m (path y)
+                    else foldWalk it m ys
+        foldWalk _ z _ = return z
+
+removeCurrentAndParentDir :: [FilePath] -> [FilePath]
+removeCurrentAndParentDir = filter (`notElem` [".",".."])
+
+countDirsIterator :: Iterator Integer
+countDirsIterator count info = Continue (if isDirectory info
+                                             then count+1
+                                             else count)
+
+countFilesIterator :: Iterator Integer
+countFilesIterator count _ = Continue (count+1)
+
+isDirectory :: Info -> Bool
+isDirectory x = searchable p
+    where
+        (Just p) = perms x
 
 -- user-controlled filesystem walks
 -- reorder resorts the file list however the user wants it
@@ -21,13 +59,9 @@ traverse reorder currentDir = do
     filesDirs <- liftM removeCurrentAndParentDir $ getDirectoryContents currentDir
     infos <- mapM (getInfo . (currentDir </>)) filesDirs
     liftM concat $ forM (reorder infos) $ (\info -> do
-         isDirectory <- doesDirectoryExist (path info)
-         if isDirectory
+         if isDirectory info
              then traverse reorder (path info)
              else return [info])
-    where
-        removeCurrentAndParentDir :: [FilePath] -> [FilePath]
-        removeCurrentAndParentDir = filter (`notElem` [".",".."])
 
 traverseWithPred :: ([Info] -> [Info]) -> Predicate -> FilePath -> IO [FilePath]
 traverseWithPred reorder p currentDir = do
@@ -54,9 +88,6 @@ listFiles currentDir = do
     results <- liftM concat $ mapM recurseListFiles filesDirs
     filterM notEmpty results
     where
-        removeCurrentAndParentDir :: [FilePath] -> [FilePath]
-        removeCurrentAndParentDir = filter (`notElem` [".",".."])
-
         recurseListFiles :: FilePath -> IO [FilePath]
         recurseListFiles y = do
             let fullPath = currentDir </> y
@@ -102,6 +133,9 @@ getFileSize x = handle (\(SomeException _) -> return Nothing) $
             do
                 size <- hFileSize fHandle
                 return (Just size))
+
+test4 :: IO Integer
+test4 = foldTraverse countDirsIterator 0 "."
 
 test3 :: IO [FilePath]
 test3 = traverseWithPred reverse ((liftPath takeExtension ==? ".hs")
