@@ -3,15 +3,24 @@ module Predicates where
 import System.Directory (Permissions)
 import Data.Time (UTCTime(..))
 
+data Info = Info {
+          path :: FilePath,
+          perms :: Maybe Permissions,
+          size :: Maybe Integer,
+          modTime :: Maybe UTCTime }
+
+instance Show Info where
+    show = path
+
 type InfoP a = FilePath -> Permissions -> Maybe Integer -> UTCTime -> a
 
 type Predicate = InfoP Bool
 
 pathPredicate :: InfoP FilePath
-pathPredicate path _ _ _ = path
+pathPredicate p _ _ _ = p
 
 sizePredicate :: InfoP Integer
-sizePredicate _ _ (Just size) _ = size
+sizePredicate _ _ (Just s) _ = s
 sizePredicate _ _ Nothing _ = -1
 
 --equalPredicate :: Eq a => InfoP a -> a -> Predicate

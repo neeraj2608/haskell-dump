@@ -13,6 +13,40 @@ import Control.Exception (SomeException(..), handle, bracket)
 import Predicates
 import PredicateCombinators
 
+-- user-controlled filesystem walks
+-- reorder resorts the file list however the user wants it
+-- this is a strict function
+traverse :: ([Info] -> [Info]) -> FilePath -> IO [Info]
+traverse reorder currentDir = do
+    filesDirs <- liftM removeCurrentAndParentDir $ getDirectoryContents currentDir
+    infos <- mapM (getInfo . (currentDir </>)) filesDirs
+    liftM concat $ forM (reorder infos) $ (\info -> do
+         isDirectory <- doesDirectoryExist (path info)
+         if isDirectory
+             then traverse reorder (path info)
+             else return [info])
+    where
+        removeCurrentAndParentDir :: [FilePath] -> [FilePath]
+        removeCurrentAndParentDir = filter (`notElem` [".",".."])
+
+traverseWithPred :: ([Info] -> [Info]) -> Predicate -> FilePath -> IO [FilePath]
+traverseWithPred reorder p currentDir = do
+    infos <- traverse reorder currentDir
+    liftM (map path) $ filterM f infos
+    where
+        f :: Info -> IO Bool
+        f = (\info -> do
+                let Just pe = perms info
+                let Just ti = modTime info
+                return $ p (path info) pe (size info) ti)
+
+getInfo :: FilePath -> IO Info
+getInfo file = do
+    perm <- getPermissions file
+    size <- getFileSize file
+    time <- getModificationTime file
+    return (Info file (Just perm) size (Just time))
+
 -- strict find
 listFiles :: FilePath -> IO [FilePath]
 listFiles currentDir = do
@@ -36,7 +70,7 @@ listFiles currentDir = do
 
 findWithSimplePred :: (FilePath -> Bool) -> FilePath -> IO [FilePath]
 findWithSimplePred p x = do
-    result <- listFiles x 
+    result <- listFiles x
     filterM checkPred result
     where
        checkPred :: FilePath -> IO Bool
@@ -44,7 +78,7 @@ findWithSimplePred p x = do
 
 findWithPred :: Predicate -> FilePath -> IO [FilePath]
 findWithPred p x = do
-    result <- listFiles x 
+    result <- listFiles x
     filterM checkPred result
     where
         checkPred :: FilePath -> IO Bool
@@ -69,10 +103,18 @@ getFileSize x = handle (\(SomeException _) -> return Nothing) $
                 size <- hFileSize fHandle
                 return (Just size))
 
-main :: IO [FilePath]
-main = findWithPred ((liftPath takeExtension ==? ".hs")
-                           &&?
-                           (sizePredicate <? 3000)) "."
+test3 :: IO [FilePath]
+test3 = traverseWithPred reverse ((liftPath takeExtension ==? ".hs")
+                                  &&?
+                                  (sizePredicate <? 3000)) "."
+
+test2 :: IO [Info]
+test2 = traverse reverse "."
+
+test1 :: IO [FilePath]
+test1 = findWithPred ((liftPath takeExtension ==? ".hs")
+                      &&?
+                      (sizePredicate <? 3000)) "."
 
 --main = findWithPred (makePredicate sizePredicate (==) 3114) "."
 --main = findWithPred (equalPredicate sizePredicate 3046) "."
