@@ -4,7 +4,8 @@
 module RayTracer where
 
 import Control.Applicative
-import Vector
+import Types
+import Control.Arrow ((&&&))
 
 --------------------------------------------------------------------------------
 writePPM :: Image -> FilePath -> IO ()
@@ -25,29 +26,28 @@ writePPM im file = do
 
 --------------------------------------------------------------------------------
 traceScene :: Scene -> Image -> Image
-traceScene s i = pickUppermostSurface i $ map (`getSurfaceRayIntersections` i) s
+traceScene s image = updateImage image $ pickUppermostSurface $ getSurfaceRayIntersections [ (x, y, s) | y <- [0..h - 1], x <- [0..w - 1] ]
     where
-        -- we have [Image] with ray intersections for each surface in the
-        -- scene. We assume opaque surfaces so only the uppermost surface
-        -- will show
-        pickUppermostSurface :: Image -> [[(Maybe Double, Color)]] -> Image
-        pickUppermostSurface im y = updateImage im $ map snd [f y index | index <- [0..(length . head) y - 1]]
+        w = width image
+        h = height image
 
-        f :: [[(Maybe Double, Color)]] -> Int -> (Maybe Double, Color)
-        f y index = foldr (g index) (Nothing, white) y
+        pickUppermostSurface :: [[(Color, Maybe Double)]] -> [Color]
+        pickUppermostSurface = map (fst . fold)
 
-        g :: Int -> [(Maybe Double, Color)] -> (Maybe Double, Color) -> (Maybe Double, Color)
-        g index y acc | fst curr > fst acc = curr
-                      | otherwise = acc
-                      where curr = y !! index
+        fold :: [(Color, Maybe Double)] -> (Color, Maybe Double)
+        fold = foldr f (white, Nothing)
+
+        f :: (Color, Maybe Double) -> (Color, Maybe Double) -> (Color, Maybe Double)
+        f x y | snd x > snd y = x
+              | otherwise = y
 
         updateImage :: Image -> [Color] -> Image
         updateImage x y = x {colordata = y}
 
         white = [255, 255, 255]
 
-getSurfaceRayIntersections :: Surface -> Image -> [(Maybe Double, Color)]
-getSurfaceRayIntersections s i = zip f (repeat $ color s)
+getSurfaceRayIntersections :: [(Int, Int, Scene)] -> [[(Color, Maybe Double)]]
+getSurfaceRayIntersections = map f
     where
-        f :: [Maybe Double]
-        f = map ((`intersect` s) . primaryRayForPixel) [ (x,y) | x <- [0..width i - 1], y <- [0..height i - 1]]
+        f :: (Int, Int, Scene) -> [(Color, Maybe Double)]
+        f (x, y, z) = map (color Control.Arrow.&&& intersect (primaryRayForPixel (x,y)) ) z

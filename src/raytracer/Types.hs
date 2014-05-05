@@ -1,8 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Vector where
-
-import Debug.Trace
+module Types where
 
 --------------------------------------------------------------------------------
 type Color = [Int]
