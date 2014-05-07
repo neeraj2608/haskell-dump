@@ -6,6 +6,7 @@ import Data.Char
 import Data.Bits
 import Data.Either
 import System.IO
+import Data.Monoid
 
 {-
 Messing about with Haskell.
@@ -820,3 +821,14 @@ quickSort (x:xs) = qHelper [] [] xs
 quickSort' :: Ord a => [a] -> [a]
 quickSort' (x:xs) = quickSort' [y | y<-xs, y <= x] ++ [x] ++ quickSort' [y | y<-xs, y > x]
 quickSort' [] = []
+
+-- monoids
+-- satisfy two properties
+-- associativity: a * (b * c) = (a * b) * c
+-- identity value: a * e = e * a
+instance Monoid [a] where
+    mempty :: a
+    mempty = a
+    
+    mappend :: a -> a -> a
+    mappend = (++)
