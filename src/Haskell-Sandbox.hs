@@ -6,7 +6,9 @@ import Data.Char
 import Data.Bits
 import Data.Either
 import System.IO
+import System.Random
 import Data.Monoid
+import Control.Monad.Trans.State
 
 {-
 Messing about with Haskell.
@@ -826,9 +828,21 @@ quickSort' [] = []
 -- satisfy two properties
 -- associativity: a * (b * c) = (a * b) * c
 -- identity value: a * e = e * a
+{-
+
 instance Monoid [a] where
     mempty :: a
     mempty = a
     
     mappend :: a -> a -> a
     mappend = (++)
+    
+-}
+    
+-- functors provide fmap
+-- they must preserve identity i.e., fmap id == id
+-- they must be composable fmap (f . g) == fmap f . fmap g
+{-
+instance Functor [] where
+    fmap = map
+-}
