@@ -9,6 +9,7 @@ import System.IO
 import System.Random
 import Data.Monoid
 import Control.Monad.Trans.State
+import Control.Monad (liftM2, liftM, ap)
 
 {-
 Messing about with Haskell.
@@ -846,3 +847,34 @@ instance Monoid [a] where
 instance Functor [] where
     fmap = map
 -}
+
+-- State monad
+type GeneratorState = State StdGen
+
+rollDice :: GeneratorState Int
+rollDice = do
+        generator <- get
+        let (value,newgenerator) = (randomR (1,6) generator)
+        put newgenerator
+        return value
+
+roll2Dice :: GeneratorState (Int, Int)
+roll2Dice = liftM2 (,) rollDice rollDice
+
+genRandom :: Random a => GeneratorState a
+genRandom = do
+        generator <- get
+        let (value,newgenerator) = random generator
+        put newgenerator
+        return value
+
+-- ap simply combines the successive genRandom calls into a 4-tuple
+-- it's like a four-lift for liftM2 
+-- Call testRandom thus: evalState testRandom (mkStdGen 1)
+-- the mkStdGen 1 is the StdGen for the first genRandom
+-- the successive calls use the saved state of genRandom
+testRandom :: GeneratorState (Int, Char, Double, Bool)
+testRandom = liftM (,,,)      genRandom
+                         `ap` genRandom
+                         `ap` genRandom
+                         `ap` genRandom
