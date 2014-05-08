@@ -31,7 +31,7 @@ type Image = Array (Int, Int) RGBPixel
 
 -- then >> for Parsers
 (=>>) :: Parser a -> Parser b -> Parser b
-(=>>) firstParser secondParser = firstParser =>>= \_ -> secondParser
+(=>>) firstParser secondParser = firstParser =>>= const secondParser
 
 -------------------------------------------------------------------------------        
 toParser :: a -> Parser a
@@ -39,7 +39,7 @@ toParser x = Parser (\s -> Right (x, s))
 
 -------------------------------------------------------------------------------
 instance Functor Parser where
-  fmap f p = p =>>= (\x -> toParser (f x))
+  fmap f p = p =>>= toParser (f x)
   
 -------------------------------------------------------------------------------
 ppmParse :: Parser Image
@@ -70,7 +70,7 @@ parseRGBPixel = parseWord8 =>>= \red ->
                 toParser (red, green, blue)
 
 toGrayScale :: RGBPixel -> Pixel
-toGrayScale (r, g, b) = round $ (fromIntegral r)*0.30 + (fromIntegral g)*0.59 + (fromIntegral b)*0.11 
+toGrayScale (r, g, b) = round $ fromIntegral r*0.30 + fromIntegral g*0.59 + fromIntegral b*0.11 
 
 data Bit = Zero | One
 
@@ -108,8 +108,8 @@ parse p state = case runParser p $ ParseState state 0 of
 parseWord8 :: Parser Word8
 parseWord8 = getParserState =>>=
             \oldState -> case L.uncons (residual oldState) of
-                      Nothing -> Parser $ (\s -> Left $ "error at offset " ++ (show $ offset s))
-                      Just y@(curWord, remainingString) -> Parser $ (\s -> Right (curWord, newState))
+                      Nothing -> Parser (\s -> Left $ "error at offset " ++ show (offset s))
+                      Just y@(curWord, remainingString) -> Parser (\s -> Right (curWord, newState))
                         where newState = oldState {residual = remainingString, offset = offset oldState + 1}
                         
 peekByte :: Parser (Maybe Word8)
