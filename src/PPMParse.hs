@@ -51,7 +51,7 @@ ppmParse = parseWithWhile word82Char (not . isSpace) =>>=
            parseChar =>>= \singleWhiteSpace -> assert((not . isSpace) singleWhiteSpace) "Expected a single whitespace" =>>
            parseTimes (width * height) parseRGBPixel =>>= \rgbPixel ->
            toParser (listArray ((0,0),(width-1, height-1)) rgbPixel)
-           
+
 assert :: Bool -> String -> Parser ()
 assert f s | f = Parser (\_ -> Left s)
            | otherwise = toParser ()
@@ -68,6 +68,35 @@ parseRGBPixel = parseWord8 =>>= \red ->
                 parseWord8 =>>= \green ->
                 parseWord8 =>>= \blue ->
                 toParser (red, green, blue)
+
+toGrayScale :: RGBPixel -> Pixel
+toGrayScale (r, g, b) = round $ (fromIntegral r)*0.30 + (fromIntegral g)*0.59 + (fromIntegral b)*0.11 
+
+data Bit = Zero | One
+
+toMonochrome :: Ix i => Double -> Array i Pixel -> Array i Bit
+toMonochrome threshValue array = f <$> array
+    where
+        f x | fromIntegral x < pivot = Zero
+            | otherwise = One
+        pivot = round $ min + (max - min) * threshValue
+        min = fromIntegral $ foldArray lt array
+        max = fromIntegral $ foldArray gt array
+        
+        gt x y | x > y = y
+               | otherwise = x
+        
+        lt x y | x < y = x
+               | otherwise = y
+        
+        foldArray :: Ix i => (a -> a -> a) -> Array i a -> a
+        foldArray f arr = foldArray' f (arr ! (fst . bounds) arr) arr
+        
+        foldArray' :: Ix i => (a -> a -> a) -> a -> Array i a -> a
+        foldArray' f acc arr = f' f acc (indices arr)
+            where
+                  f' _ x [] = x
+                  f' f x (y:ys) = f' f (f x (arr ! y)) ys
 
 -------------------------------------------------------------------------------
 parse :: Parser a -> L.ByteString -> Either String a

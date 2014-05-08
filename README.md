@@ -12,7 +12,9 @@ Haskell Sandbox
 5. Basic JSON library
 6. Other small snippets.
 
-####In progress:
-
-1. EAN-13 barcode recognition
-2. LISP interpreter
+####Future:
+1. LISP Interpreter
+2. TCP Server
+3. Montague Semantic Parser
+4. Tautology Checker
+5. Zipper-based filesystem
