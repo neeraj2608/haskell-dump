@@ -1,5 +1,6 @@
 {-
--- Super basic TCP Server
+- Super basic TCP Server
+- Just to get familiar with Network and forkIO
 -}
 module TCPServer where
 

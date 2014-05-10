@@ -1,3 +1,6 @@
+{-
+- Inspired by https://github.com/ryanl/haskell-raytracer/
+-}
 module Main where
 
 import RayTracer
