@@ -41,7 +41,7 @@ changeWtoP' Empty = Empty
 data Direction = L |
                  R
                  deriving (Show)
-                 
+
 type Directions = [Direction]
 
 changeWtoP :: Directions -> Tree Char -> Tree Char
@@ -56,23 +56,20 @@ elemAt (L:ds) (Node x y z) = elemAt ds y
 elemAt (R:ds) (Node x y z) = elemAt ds z
 elemAt [] (Node x _ _) = x
 
-newtype BreadCrumbs a = BreadCrumbs {getCrumbs :: ([Direction], Maybe a)}
+newtype BreadCrumbs a = BreadCrumbs {getCrumbs :: ([Direction], [a])}
 
 newtype Zipper a = Zipper {getZip :: (BreadCrumbs a, a)}
 
-instance Monad Zipper where
-    return x = Zipper (BreadCrumbs ([], Nothing), x)
-    x >>= makeX = Zipper (BreadCrumbs (d++ds, t), t')
-        where
-            (d,t) = getCrumbs b
-            (b, t') = getZip $ makeX y
-            (BreadCrumbs (ds, _), y) = getZip x
+goLeft :: Zipper (Tree a) -> Zipper (Tree a)
+goLeft (Zipper (BreadCrumbs b, Node x y z)) = Zipper (BreadCrumbs (L:fst b, (Node x Empty z):snd b), y)
 
-goLeft  :: Tree a -> Zipper (Tree a)
-goLeft (Node x y z) = Zipper (BreadCrumbs ([L], Just (Node x Empty z)), y)
+goRight :: Zipper (Tree a) -> Zipper (Tree a)
+goRight (Zipper (BreadCrumbs b, Node x y z)) = Zipper (BreadCrumbs (R:fst b, (Node x y Empty):snd b), z)
 
-goRight :: Tree a -> Zipper (Tree a)
-goRight (Node x y z) = Zipper (BreadCrumbs ([R], Just (Node x y Empty)), z)
+goUp :: Zipper (Tree a) -> Zipper (Tree a)
+goUp (Zipper (BreadCrumbs (L:ds, (Node x _ y):as), n)) = Zipper (BreadCrumbs (ds, as), Node x n y)
+goUp (Zipper (BreadCrumbs (R:ds, (Node x y _):as), n)) = Zipper (BreadCrumbs (ds, as), Node x y n)
+goUp x@(Zipper (BreadCrumbs (_, []), n)) = x
 
-twoLefts :: Tree Char -> Tree Char
-twoLefts x = snd $ getZip $ (goLeft x >>= goRight)
+test :: Tree Char -> Tree Char
+test x = snd $ getZip $ (goLeft $ goUp $ goLeft $ Zipper (BreadCrumbs ([],[]), x)) -- >>= (goUp . return))
