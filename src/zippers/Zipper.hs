@@ -33,7 +33,8 @@ freeTree =
                 (Node 'C' Empty Empty)  
             )  
         )
-        
+
+-- change node - naive
 changeWtoP' :: Tree Char -> Tree Char
 changeWtoP' (Node x l (Node m (Node _ a b) n)) = (Node x l (Node m (Node 'P' a b) n))
 changeWtoP' Empty = Empty
@@ -60,16 +61,24 @@ newtype BreadCrumbs a = BreadCrumbs {getCrumbs :: ([Direction], [a])}
 
 newtype Zipper a = Zipper {getZip :: (BreadCrumbs a, a)}
 
-goLeft :: Zipper (Tree a) -> Zipper (Tree a)
-goLeft (Zipper (BreadCrumbs b, Node x y z)) = Zipper (BreadCrumbs (L:fst b, (Node x Empty z):snd b), y)
+instance Monad Zipper where
+    return x = Zipper (BreadCrumbs ([], []), x)
+    x >>= makeX = Zipper (BreadCrumbs (d++ds, t), t')
+        where
+            (d, t) = getCrumbs b
+            (b, t') = getZip $ makeX y
+            (BreadCrumbs (ds, tOld), y) = getZip x
 
-goRight :: Zipper (Tree a) -> Zipper (Tree a)
-goRight (Zipper (BreadCrumbs b, Node x y z)) = Zipper (BreadCrumbs (R:fst b, (Node x y Empty):snd b), z)
+goLeft :: Zipper (Tree a) -> Zipper (Zipper (Tree a))
+goLeft (Zipper (BreadCrumbs b, Node x y z)) = return $ Zipper (BreadCrumbs (L:fst b, (Node x Empty z):snd b), y)
 
-goUp :: Zipper (Tree a) -> Zipper (Tree a)
-goUp (Zipper (BreadCrumbs (L:ds, (Node x _ y):as), n)) = Zipper (BreadCrumbs (ds, as), Node x n y)
-goUp (Zipper (BreadCrumbs (R:ds, (Node x y _):as), n)) = Zipper (BreadCrumbs (ds, as), Node x y n)
-goUp x@(Zipper (BreadCrumbs (_, []), n)) = x
+goRight :: Zipper (Tree a) -> Zipper (Zipper (Tree a))
+goRight (Zipper (BreadCrumbs b, Node x y z)) = return $ Zipper (BreadCrumbs (R:fst b, (Node x y Empty):snd b), z)
+
+goUp :: Zipper (Tree a) -> Zipper (Zipper (Tree a))
+goUp (Zipper (BreadCrumbs (L:ds, (Node x _ y):as), n)) = return $ Zipper (BreadCrumbs (ds, as), Node x n y)
+goUp (Zipper (BreadCrumbs (R:ds, (Node x y _):as), n)) = return $ Zipper (BreadCrumbs (ds, as), Node x y n)
+goUp x@(Zipper (BreadCrumbs (_, []), n)) = return x
 
 test :: Tree Char -> Tree Char
-test x = snd $ getZip $ (goLeft $ goUp $ goLeft $ Zipper (BreadCrumbs ([],[]), x)) -- >>= (goUp . return))
+test x = snd $ getZip $ snd $ getZip $ (goLeft (return x) >>= goUp >>= goRight)
