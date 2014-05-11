@@ -10,6 +10,7 @@ import System.Random
 import Data.Monoid
 import Control.Monad.Trans.State
 import Control.Monad (liftM2, liftM, ap)
+import Control.Applicative ((<*>), (<$>), pure, Applicative(..), liftA2)
 
 {-
 Messing about with Haskell.
@@ -878,3 +879,21 @@ testRandom = liftM (,,,)      genRandom
                          `ap` genRandom
                          `ap` genRandom
                          `ap` genRandom
+
+                         
+-- Applicative
+xar1 = (\x -> [x+1,x+2]) <$> [1,2] -- gives [[2,3],[3,4]]
+xar2 = pure (\x -> [x+1,x+2]) <*> [1,2] -- same as above
+
+xar3 = concat $ (\x -> [x+1,x+2]) <$> [1,2] -- gives [[2,3,3,4]]
+xar4 = concat $ pure (\x -> [x+1,x+2]) <*> [1,2] -- same as above
+xar5 = [(+1),(+2)] <*> [1,2] -- same as above
+
+xar6 = liftA2 (++) [[1]] [[2]] -- gives [[1,2]
+
+sequenceA :: Applicative f => [f a] -> f [a]
+sequenceA [] = pure []
+sequenceA (x:xs) = (:) <$> x <*> sequenceA xs
+
+sequenceA' :: Applicative f => [f a] -> f [a]
+sequenceA' = foldr (liftA2 (:)) (pure [])

@@ -4,7 +4,7 @@
 module TautologyCheck where
 
 import Data.List (sort, group)
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>),pure,(<*>))
 
 -------------------------------------------------------------------------------
 data Token = And Token Token |
@@ -53,7 +53,8 @@ createPermutations x = zip x <$> boolPermuts (length x)
 
 boolPermuts :: Int -> [[Bool]]
 boolPermuts n | n<=1 = [[True], [False]]
-              | otherwise = [y:x | y <- [True, False], x <- boolPermuts (n-1)]
+              | otherwise = pure (:) <*> [y| y <- [True, False]] <*> [x | x <- boolPermuts (n-1)]
+                            -- the line above is = [y:x | y <- [True, False], x <- boolPermuts (n-1)]
 
 -------------------------------------------------------------------------------
 evalToken :: Token -> Table -> Bool
