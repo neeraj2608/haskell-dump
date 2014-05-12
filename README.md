@@ -10,11 +10,10 @@ Haskell Sandbox
 3. Glob to Regex conversion for file searching
 4. Minimax algorithm for playing Tic-tac-toe
 5. Basic JSON library
-6. Other small snippets.
+6. TCP Server
+7. Tautology Checker
+8. Zipper-based filesystem
+9. Other small snippets.
 
 ####Future:
 1. LISP Interpreter
-2. TCP Server
-3. Montague Semantic Parser
-4. Tautology Checker
-5. Zipper-based filesystem
