@@ -8,7 +8,7 @@ import Control.Monad
 -------------------------------------------------------------------------------
 main :: Maybe String
 main = do
-    test4 >>= (return . getName . snd)
+    test8 >>= (return . getName . snd)
     -- equivalent to
     -- liftM (getName . snd) test2
 
@@ -20,6 +20,10 @@ test1 = Just ([],testDisk) >>= fsDown "pics" >>= fsDown "skull_man(scary).bm" --
 test2 = Just ([],testDisk) >>= fsDown "pics" >>= fsDown "skull_man(scary).bmp" -- will return a Just "skull_man(scary).bmp"
 test3 = Just ([],testDisk) >>= fsUp >>= fsUp >>= fsUp -- will stay at root
 test4 = Just ([],testDisk) >>= fsUp >>= fsDown "pics" -- will return a Just "pics"
+test5 = Just ([],testDisk) >>= fsUp >>= fsDown "pics" >>= fsRename "blah" -- will return a Just "blah"
+test6 = Just ([],testDisk) >>= fsUp >>= fsDown "pics" >>= fsNewFile (File "test" "testdata") >>= fsDown "test" -- will return a Just "test"
+test7 = Just ([],testDisk) >>= fsUp >>= fsDown "pics" >>= fsNewFile (Folder "test" []) >>= fsDown "test" -- will return a Just "test"
+test8 = Just ([],testDisk) >>= fsUp >>= fsDown "pope_time.avi" >>= fsNewFile (Folder "test" []) >>= fsDown "test" -- will return a Just "pope_time.avi"
 
 testDisk :: FSItem  
 testDisk = 
@@ -51,6 +55,7 @@ fsUp (((FSCrumb name before after):xs), y) = Just (xs, Folder name (before++[y]+
 fsUp x@([], _) = Just x
 
 fsDown :: Name -> FSZipper -> Maybe FSZipper
+fsDown _ x@(_, File _ _) = Just x
 fsDown toName (xs, Folder name items) = case after of
     [] -> Nothing
     _ -> Just (y:xs, z)
@@ -61,6 +66,11 @@ fsDown toName (xs, Folder name items) = case after of
 
         matchName :: (FSItem -> Bool)
         matchName x = ((==) toName $ getName x)
-        
+
 fsRename :: Name -> FSZipper -> Maybe FSZipper
-fsRename = undefined
+fsRename newName (x, File name y) = Just (x, File newName y)
+fsRename newName (x, Folder name y) = Just (x, Folder newName y)
+
+fsNewFile :: FSItem -> FSZipper -> Maybe FSZipper
+fsNewFile _ x@(_, File _ _) = Just x
+fsNewFile w (z, Folder x y) = Just (z, Folder x (w:y))
