@@ -1,6 +1,6 @@
 {-
 - Based on Learn you a haskell - Zippers
-- Changed zipper to monad so we can chain them like parsers.
+- Monadic zippers for trees
 -}
 module ZipperM where
 
@@ -77,6 +77,3 @@ goToRoot x = goUp x >>= goToRoot
 modify :: (a -> a) -> Zipper (Tree a) -> Zipper (Zipper (Tree a))
 modify f (Zipper (BreadCrumbs a, Node x y z)) = return $ Zipper (BreadCrumbs a, Node (f x) y z)
 modify f x@(Zipper (BreadCrumbs a, Empty)) = return x
-
-insert :: Tree a -> Zipper (Tree a) -> Zipper (Zipper (Tree a))
-insert = undefined

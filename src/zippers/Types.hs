@@ -24,3 +24,13 @@ instance Monad Zipper where
             (d, t) = getCrumbs b
             (b, t') = getZip $ makeX y
             (BreadCrumbs (ds, tOld), y) = getZip x
+            
+type Name = String
+type Data = String
+data FSItem = File Name Data |
+            Folder Name [FSItem]
+            deriving (Show)
+            
+data FSCrumb = FSCrumb Name [FSItem] [FSItem]
+
+type FSZipper = ([FSCrumb], FSItem)
