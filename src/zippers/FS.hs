@@ -3,12 +3,26 @@
 module FS where
 
 import Types
+import Control.Monad
 
-main :: IO ()
-main = undefined
+-------------------------------------------------------------------------------
+main :: Maybe String
+main = do
+    test4 >>= (return . getName . snd)
+    -- equivalent to
+    -- liftM (getName . snd) test2
 
-myDisk :: FSItem  
-myDisk = 
+getName :: FSItem -> Name
+getName (File x _) = x
+getName (Folder x _) = x
+
+test1 = Just ([],testDisk) >>= fsDown "pics" >>= fsDown "skull_man(scary).bm" -- will return a Nothing
+test2 = Just ([],testDisk) >>= fsDown "pics" >>= fsDown "skull_man(scary).bmp" -- will return a Just "skull_man(scary).bmp"
+test3 = Just ([],testDisk) >>= fsUp >>= fsUp >>= fsUp -- will stay at root
+test4 = Just ([],testDisk) >>= fsUp >>= fsDown "pics" -- will return a Just "pics"
+
+testDisk :: FSItem  
+testDisk = 
     Folder "root"   
         [ File "goat_yelling_like_man.wmv" "baaaaaa"  
         , File "pope_time.avi" "god bless"  
@@ -28,3 +42,25 @@ myDisk =
                 ]  
             ]  
         ]
+
+-------------------------------------------------------------------------------
+-- FS functionality
+-------------------------------------------------------------------------------
+fsUp :: FSZipper -> Maybe FSZipper
+fsUp (((FSCrumb name before after):xs), y) = Just (xs, Folder name (before++[y]++after))
+fsUp x@([], _) = Just x
+
+fsDown :: Name -> FSZipper -> Maybe FSZipper
+fsDown toName (xs, Folder name items) = case after of
+    [] -> Nothing
+    _ -> Just (y:xs, z)
+    where
+        z = head after
+        y = FSCrumb name before (tail after)
+        (before,after) = break matchName items
+
+        matchName :: (FSItem -> Bool)
+        matchName x = ((==) toName $ getName x)
+        
+fsRename :: Name -> FSZipper -> Maybe FSZipper
+fsRename = undefined
