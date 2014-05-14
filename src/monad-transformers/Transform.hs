@@ -6,17 +6,19 @@ module Transform where
 import System.FilePath
 import System.Directory
 import Control.Monad
+import Control.Monad.Writer (WriterT, tell, execWriterT)
+import Control.Monad.Trans (liftIO)
 
 listFileDirs :: FilePath -> IO [FilePath]
 listFileDirs path = liftM (filter f) $ getDirectoryContents path
     where f :: FilePath -> Bool
           f = flip notElem [".",".."]
 
-countEntries :: FilePath -> IO [(FilePath, Int)]
+countEntries :: FilePath -> WriterT [(FilePath, Int)] IO ()
 countEntries path = do
-    filedirs <- listFileDirs path
-    y <- liftM concat $ forM filedirs processFileOrDir
-    return $ (path, length filedirs) : y
+    filedirs <- liftIO $ listFileDirs path
+    y <- liftIO $ liftM concat $ forM filedirs processFileOrDir
+    tell $ (path, length filedirs) : y
 
     where
         isDir :: FilePath -> IO Bool
@@ -27,8 +29,8 @@ countEntries path = do
         let fullPath = path </> fileOrDir
         isDir fullPath >>= \isDirectory ->
             if isDirectory
-                then countEntries fullPath
+                then execWriterT $ countEntries fullPath
                 else return []
 
 main :: IO [(FilePath, Int)]
-main = countEntries ".."
+main = execWriterT $ countEntries ".."
