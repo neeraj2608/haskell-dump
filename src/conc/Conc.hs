@@ -1,31 +1,23 @@
 module Conc where
 
 import Control.Concurrent
-import Control.Monad
-import Control.Exception
-import qualified Data.Map as Map
+import ThreadManager
 
+-- to see the difference without a managed thread that we can wait for,
+-- compare main with test. In both these functions, we do the same thing
+-- (putStrLn $ concat $ replicate 500 "hi")
+-- In the main case, however, the done is always printed after all the "hi"s
+-- In the test case, the done is interspersed with the "hi"s
 main :: IO ()
 main = do
-  m <- newEmptyMVar
-  forkIO $ takeMVar m >>= putStrLn
-  putMVar m "hi"
-  return ()
+        tMgr <- newManager
+        tid <- forkManagedThread tMgr (do putStrLn $ concat $ replicate 500 "hi"; return ())
+        waitFor tMgr tid
+        print "done"
+        return ()
   
-data ThreadStatus = Running | Finished | Threw IOException
-                    deriving (Show)
-
-newtype ThreadManager = ThreadManager (MVar (Map.Map ThreadId (MVar ThreadStatus)))
-
-newManager :: IO ThreadManager
-newManager = liftM ThreadManager $ newMVar Map.empty
-
-forkManagedThread :: ThreadManager -> IO () -> IO ThreadId
-forkManagedThread (ThreadManager mapMVar) x = do
-        state <- newEmptyMVar
-        tid <- forkIO $ do -- forkIO :: IO () -> IO ThreadId
-            result <- try x -- try :: Exception e => IO a -> IO (Either e a)
-            putMVar state $ either Threw (const Finished) result
-        m <- takeMVar mapMVar
-        putMVar mapMVar $ Map.insert tid state m
-        return tid
+test :: IO ()
+test = do
+        forkIO (do putStrLn $ concat $ replicate 500 "hi"; return ())
+        print "done"
+        return ()
