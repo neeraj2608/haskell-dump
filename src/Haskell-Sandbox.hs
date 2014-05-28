@@ -826,6 +826,11 @@ quickSort' :: Ord a => [a] -> [a]
 quickSort' (x:xs) = quickSort' [y | y<-xs, y <= x] ++ [x] ++ quickSort' [y | y<-xs, y > x]
 quickSort' [] = []
 
+-- permutations with list comprehensions
+permutations :: Eq a => [a] -> [[a]]
+permutations [] = [[]]
+permutations xs = [x : p | x <- xs, p <- permutations $ xs\\[x]] -- \\ is the set difference operator
+
 -- monoids
 -- satisfy two properties
 -- associativity: a * (b * c) = (a * b) * c
